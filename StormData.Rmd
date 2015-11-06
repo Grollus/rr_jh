@@ -1,0 +1,219 @@
+Impact Analysis: Population Health and Economic Cost of United States Storm Events
+==================================================================================
+
+Synopsis
+========
+The following report attempts to analyze, and ultimately visualize, the costs of storm events across the United States.  The analysis uses the U.S. National Oceanic and Atmostpheric Administration's (NOAA) storm database which contains storm event data back to the 1950's.  However, I only used data collected after 1995 as the current classification scheme did not go into effect until 1996.  This allowed me to categorize storm events into one of 48 officially recognized catagories.
+
+After selecting post-1995 records, I summarized deaths, injuries, property damage, and crop damage by event type, ultimately pulling the events which encompassed 99% of the recorded data for the respective catagory.  After some additional cleaning, this data was plotted to reveal the most harmful event types for each question. Ultimately, we see that tornados cause the most injuries, excessive heat and tornadoes cause the most deaths, floods cause the most property damage and drought is responsible for the most crop damage.
+
+Data Processing
+===============
+
+My first step was to load the raw data into R and format the variable names.  Additionally, I went ahead and formated the date variable as.Date to avoid any issues in the future.
+
+```{r, cache=TRUE}
+url <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(url, destfile="storm.data.csv")
+data <- read.table("storm.data.csv", header=T, sep=",")
+
+names(data) <- tolower(names(data))
+names(data) <- gsub("^\\_+|\\_+$", "", names(data))
+names(data) <- sub("_", ".", names(data))
+data$bgn.date <- as.Date(data$bgn.date, "%m/%d/%Y")
+```
+
+After loading the data, I decided to work only with data which had been collected since the NOAA introduced their current classification scheme of 48 storm events.  This allowed me to organize the events, as closely as possible, into offically recognized catagories.
+
+```{r}
+post.1996 <- subset(data, bgn.date > "1996-01-01")
+post.1996$evtype <- tolower(post.1996$evtype)
+post.1996$evtype <- gsub("^\\ +|\\ +$", "", post.1996$evtype)
+
+```
+
+Viewing Fatality and Injury Data by Event Type
+==============================================
+In order to manage this large data set, my first real step was to organize the data by event type.  For fatality and injury data, I simply created a new data frame with summarized fatality and injury data for each event type.
+```{r}
+library(plyr)
+evtype <- ddply(post.1996, "evtype", summarise, deaths=sum(fatalities), injuries=sum(injuries))
+dim(evtype)
+```
+
+Although this brings us down to 430 observations, this is still quite unmanageable. After playing with the data, I noticed I could encompass 99% of the data by sortting and then taking the top 50 event types.
+```{r}
+deaths <- evtype[order(evtype$deaths, decreasing=T)[1:50],]
+head(deaths, n=3)
+death.prop <- sum(deaths$deaths)/sum(evtype$deaths)
+```
+This subset includes `r death.prop` of the total death data.
+
+Looking through the subset, we are still left with events that don't fall neatly into the offical storm data catagories. After looking through the NOAA classification scheme, I was able to place all 50 events within one of the official catagories.  While not perfect, this reduced the catagories to 30, making for a much nicer plot.
+
+
+```{r}
+deaths$evtype <- gsub("rip currents", "rip current", deaths$evtype)
+deaths$evtype <- gsub("hurricane(.*)", "hurricane/typhoon", deaths$evtype)
+deaths$evtype <- gsub("(.*)fog", "dense fog", deaths$evtype)
+deaths$evtype <- gsub("(.*)surf(.*)", "high surf", deaths$evtype)
+deaths$evtype <- gsub("landslide", "debris flow", deaths$evtype)
+deaths$evtype <- gsub("urban(.*)", "flash flood", deaths$evtype)
+deaths$evtype <- gsub("winter weather(.*)|cold and snow", "winter weather", deaths$evtype)
+deaths$evtype <- gsub("wild/forest fire", "wildfire", deaths$evtype)
+deaths$evtype <- gsub("storm surge/tide", "storm tide", deaths$evtype)
+deaths$evtype <- gsub("rough seas", "marine strong wind", deaths$evtype)
+deaths$evtype <- gsub("marine tstm wind", "marine thunderstorm wind", deaths$evtype)
+deaths$evtype <- gsub("tstm wind(.*)", "thunderstorm wind", deaths$evtype)
+deaths$evtype <- gsub("extreme cold(.*)|extreme windchill", "extreme cold/wind chill", deaths$evtype)
+deaths$evtype <- gsub("strong winds", "strong wind", deaths$evtype)
+deaths$evtype <- gsub("hypothermia/exposure|^cold(.*)", "cold/wind chill", deaths$evtype)
+deaths$evtype <- gsub("^wind", "high wind", deaths$evtype)
+
+deaths2<- ddply(deaths, "evtype", summarise, deaths=sum(deaths))
+deaths2<- deaths2[order(deaths2$deaths, decreasing=T)[1:30],]
+```
+
+
+And doing the same process for injury data
+
+```{r}
+evtype <- ddply(post.1996, "evtype", summarise, deaths=sum(fatalities), injuries=sum(injuries))
+injuries <- evtype[order(evtype$injuries, decreasing=T)[1:50],]
+head(injuries, n=3)
+injury.prop <- sum(injuries$injuries)/sum(evtype$injuries)
+```
+This subset includes `r injury.prop` of total injury data.
+
+```{r}
+injuries$evtype <- gsub("tstm wind(.*)|dry microburst", "thunderstorm wind", injuries$evtype)
+injuries$evtype <- gsub("(.*)fog", "dense fog", injuries$evtype)
+injuries$evtype <- gsub("wild/forest fire", "wildfire", injuries$evtype)
+injuries$evtype <- gsub("rip currents", "rip current", injuries$evtype)
+injuries$evtype <- gsub("glaze", "ice storm", injuries$evtype)
+injuries$evtype <- gsub("extreme cold(.*)", "extreme cold/wind chill", injuries$evtype)
+injuries$evtype <- gsub("urban(.*)", "flash flood", injuries$evtype)
+injuries$evtype <- gsub("winter weather(.*)|wintry mix|mixed precip|black ice", "winter weather", injuries$evtype)
+injuries$evtype <- gsub("^heat(.*)", "excessive heat", injuries$evtype)
+injuries$evtype <- gsub("landslide", "debris flow", injuries$evtype)
+injuries$evtype <- gsub("(.*)surf(.*)", "high surf", injuries$evtype)
+injuries$evtype <- gsub("hurricane(.*)", "hurricane/typhoon", injuries$evtype)
+injuries$evtype <- gsub("storm surge", "storm tide", injuries$evtype)
+injuries$evtype <- gsub("snow squall", "blizzard", injuries$evtype)
+injuries$evtype <- gsub("^wind", "high wind", injuries$evtype)
+
+injuries2 <- ddply(injuries, "evtype", summarise, injuries=sum(injuries))
+injuries2 <- injuries2[order(injuries2$injuries, decreasing=T),]
+```
+
+All that is left for our death and injury data is to visualize.  For our purposes here, a bar plot seems appropriate to view our most devastating storm events since 1996.
+```{r, fig.width=12, fig.height=8}
+library(ggplot2)
+library(gridExtra)
+d <- ggplot(deaths2, aes(x=evtype, y=deaths, fill=evtype)) + 
+    geom_bar(stat="identity", position=position_dodge()) +
+    scale_x_discrete(labels=NULL)
+i <- ggplot(injuries2, aes(x=evtype, y=injuries, fill=evtype)) +
+      geom_bar(stat="identity", position=position_dodge()) +
+      scale_x_discrete(labels=NULL)
+grid.arrange(d, i, ncol=2)
+```
+Using these plots, it is immediately obvious that a couple events account for the vast majority of both deaths and injuries.  Excessive heat and tornadoes are responsible for the most deaths and tornadoes are far and away the storm event responsible for the most injuries.
+
+Viewing Property and Crop Damage by Event Type
+==============================================
+When working with the property and crop damage data, one minor issue quickly became apparent.  The needed data was stored in two columns. One with the numeric value and the second with the critical 'thousands, millions, billions' information.  To easily work with this information, I decided to go ahead and make a new column which combined the two
+```{r}
+post.1996$propdmgexp <- as.character(post.1996$propdmgexp)
+post.1996$propdmgexp <- gsub("K", as.numeric("1000"), post.1996$propdmgexp)
+post.1996$propdmgexp <- gsub("M", as.numeric("1000000"), post.1996$propdmgexp)
+post.1996$propdmgexp <- gsub("B", as.numeric("1000000000"), post.1996$propdmgexp)
+post.1996$propdmgexp <- as.numeric(post.1996$propdmgexp)
+post.1996$newpropdmg <- post.1996$propdmg * post.1996$propdmgexp
+
+post.1996$cropdmgexp <- gsub("K", "1000", post.1996$cropdmgexp)
+post.1996$cropdmgexp <- gsub("M", "1000000", post.1996$cropdmgexp)
+post.1996$cropdmgexp <- gsub("B", "1000000000", post.1996$cropdmgexp)
+post.1996$cropdmgexp <- as.numeric(post.1996$cropdmgexp)
+post.1996$newcropdmg <- post.1996$cropdmg * post.1996$cropdmgexp
+```
+
+After doing this and glancing over the data, you quickly notice how many missing values are in the data set.  After reading some of the NOAA's reporting information, it seems they are intentionally slow to report damage figures, often taking years to do so.  Since there are so many missing values, I decided to omit those events with missing property or crop damage estimates.
+```{r}
+prop <- na.omit(post.1996[, c("evtype", "newpropdmg")])
+crop <- na.omit(post.1996[, c("evtype", "newcropdmg")])
+```
+
+With this done, I went about a similar process as with the fatality and injury data.  First I summarized property damage by event type.
+```{r}
+options(scipen=4)
+proptype <- ddply(prop, "evtype", summarise, propdmg=sum(newpropdmg))
+prop50 <- proptype[order(proptype$propdmg, decreasing=T)[1:50],]
+head(prop50, n=3)
+prop.prop <- sum(prop50$propdmg)/sum(proptype$propdmg)
+```
+The subset includes `r prop.prop` of total property damage event data by dollar amount.
+
+Since I am still above my 99% threshold, I went ahead and tiddied my data further, putting the events into their officially recognized catagories.
+
+```{r}
+prop50$evtype <- gsub("storm surge(.*)", "storm tide", prop50$evtype)
+prop50$evtype <- gsub("hurricane(.*)|typhoon", "hurricane/typhoon", prop50$evtype)
+prop50$evtype <- gsub("tstm wind(.*)", "thunderstorm wind", prop50$evtype)
+prop50$evtype <- gsub("wild/forest fire", "wildfire", prop50$evtype)
+prop50$evtype <- gsub("landslide", "debris flow", prop50$evtype)
+prop50$evtype <- gsub("river flood(.*)", "flood", prop50$evtype)
+prop50$evtype <- gsub("coastal flood(.*)", "coastal flood", prop50$evtype)
+prop50$evtype <- gsub("urban(.*)", "flash flood", prop50$evtype)
+prop50$evtype <- gsub("(.*)fog", "dense fog", prop50$evtype)
+prop50$evtype <- gsub("(.*)surf(.*)", "high surf", prop50$evtype)
+prop50$evtype <- gsub("(.*)freeze(.*)", "frost/freeze", prop50$evtype)
+prop50$evtype <- gsub("winter weather(.*)", "winter weather", prop50$evtype)
+
+finalprop <- ddply(prop50, "evtype", summarise, propdmg=sum(propdmg))
+finalprop <- finalprop[order(finalprop$propdmg, decreasing=T),]
+```
+
+Now, doing the exact same process for crop damage.
+```{r}
+options(scipen=4)
+croptype <- ddply(crop, "evtype", summarise, cropdmg=sum(newcropdmg))
+crop50 <- croptype[order(croptype$cropdmg, decreasing=T)[1:50],]
+head(crop50, n=3)
+crop.prop <- sum(crop50$cropdmg)/sum(croptype$cropdmg)
+```
+This subset includes `r crop.prop` of total crop damage event data by dollar amount.
+
+Additional grouping
+```{r}
+crop50$evtype <- gsub("hurricane(.*)|typhoon", "hurricane/typhoon", crop50$evtype)
+crop50$evtype <- gsub("extreme(.*)", "extreme cold/wind chill", crop50$evtype)
+crop50$evtype <- gsub("tstm wind(.*)", "thunderstorm wind", crop50$evtype)
+crop50$evtype <- gsub("(.*)freeze(.*)|(.*)frost$", "frost/freeze", crop50$evtype)
+crop50$evtype <- gsub("wild/forest fire", "wildfire", crop50$evtype)
+crop50$evtype <- gsub("river flood(.*)", "flood", crop50$evtype)
+crop50$evtype <- gsub("unseasonable cold|unseasonably cold", "cold/wind chill", crop50$evtype)
+crop50$evtype <- gsub("small(.*)", "hail", crop50$evtype)
+crop50$evtype <- gsub("landslide", "debris flow", crop50$evtype)
+crop50$evtype <- gsub("unseasonal raid", "heavy rain", crop50$evtype)
+crop50$evtype <- gsub("urban(.*)", "flash flood", crop50$evtype)
+crop50$evtype <- gsub("(.*)surf(.*)", "high surf", crop50$evtype)
+crop50$evtype <- gsub("storm surge(.*)", "storm tide", crop50$evtype)
+crop50$evtype <- gsub("^wind|gusty wind", "high wind", crop50$evtype)
+crop50$evtype <- gsub("^rain", "heavy rain", crop50$evtype)
+
+finalcrop <- ddply(crop50, "evtype", summarise, cropdmg=sum(cropdmg))
+finalcrop <- finalcrop[order(finalcrop$cropdmg, decreasing=T),]
+```
+
+And finally, we are able to plot our property and crop damage data.
+```{r, fig.width=12, fig.height=8.5}
+p <- ggplot(finalprop, aes(x=evtype, y=propdmg, fill=evtype)) +
+        geom_bar(stat="identity", position=position_dodge()) +
+        scale_x_discrete(labels=NULL)
+c <- ggplot(finalcrop, aes(x=evtype, y=cropdmg, fill=evtype)) +
+      geom_bar(stat="identity", position=position_dodge()) +
+      scale_x_discrete(labels=NULL)
+grid.arrange(p, c, ncol=2)
+```
+It is readily apparant that a handful of events are responsible for the vast majority of storm damage.  Not too surprisingly, droughts far and away are responsible for the most crop damage.  For property damage, we see the other end of the spectrum, with flooding dwarfing any other event type.
