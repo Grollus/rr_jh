@@ -1,0 +1,24 @@
+Impact Analysis: Population Health and Economic Cost of United States Storm Events
+==================================================================================
+
+
+#This will be a intro and explanation
+
+# Data Preprocessing
+```{r, cache = TRUE}
+library(readr)
+storm_data <- read_csv("repdata-data-StormData.csv")
+data <- storm_data
+```
+```{r}
+# tidy up variable names for easier calling and manipulation
+names(data) <- tolower(names(data))
+# Grab only the needed columns for faster manipulation
+suppressMessages(library(dplyr))
+data <- data %>%
+  select(bgn_date, evtype, fatalities, injuries, propdmg, propdmgexp, cropdmg,
+         cropdmgexp)
+#format date; end_dates are full of NA values
+data$bgn_date <- as.Date(data$bgn_date, "%m/%d/%Y")
+head(data)
+```
