@@ -271,12 +271,12 @@ outliers%&gt;%
   select(evtype, fatalities, injuries, property_dmg, crop_dmg)
 </code></pre>
 
-<pre><code>##        evtype fatalities injuries property_dmg crop_dmg
-## 1     TORNADO         42     1700     2.50e+08 0.00e+00
-## 2 RIVER FLOOD          0        0     5.00e+09 5.00e+09
-## 3        HEAT        583        0     0.00e+00 0.00e+00
-## 4   ICE STORM          0        0     5.00e+05 5.00e+09
-## 5       FLOOD          0        0     1.15e+11 3.25e+07
+<pre><code>##        evtype fatalities injuries property_dmg   crop_dmg
+## 1     TORNADO         42     1700    250000000          0
+## 2 RIVER FLOOD          0        0   5000000000 5000000000
+## 3        HEAT        583        0            0          0
+## 4   ICE STORM          0        0       500000 5000000000
+## 5       FLOOD          0        0 115000000000   32500000
 </code></pre>
 
 <pre><code class="r">as.character(outliers$remarks[5]) #Property Damage outlier statement
@@ -680,7 +680,7 @@ grid.arrange(p3, p4, ncol = 2)
 Hurricanes have caused the most property damage at over 80 billion dollars with tornadoes
 and storm surges both causing over 40 billion dollars in damage.</p>
 
-<p>Crop damage results make intuititve sense with drought and flood events totalling
+<p>Crop damage results make intuitive sense with drought and flood events totalling
 50.5% of 
 the total damage with ~14 billion and ~11 billion dollars respectively.  </p>
 

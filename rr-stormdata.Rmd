@@ -351,7 +351,7 @@ grid.arrange(p3, p4, ncol = 2)
 Hurricanes have caused the most property damage at over 80 billion dollars with tornadoes
 and storm surges both causing over 40 billion dollars in damage.
 
-Crop damage results make intuititve sense with drought and flood events totalling
+Crop damage results make intuitive sense with drought and flood events totalling
 `r round(sum(crop$crop_dmg[1:2])/sum(unique_events$crop_dmg)*100, digits = 1)`% of 
 the total damage with ~14 billion and ~11 billion dollars respectively.  
 
